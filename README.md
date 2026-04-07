@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # CrossFakeNet — Multimodal Fake News Detection
 ### SRM Institute of Science and Technology | B.Tech CSE Project
 
@@ -139,3 +140,7 @@ To use real trained weights:
 | Whisper slow on CPU | Normal — base model takes ~20–30s per audio file |
 | Port 5000 in use | Change port in `app.py`: `app.run(port=5001)` |
 | `torch` install fails | `pip install torch --index-url https://download.pytorch.org/whl/cpu` |
+=======
+# CrossFakeNet-Multimodal-Fake-News-Detection-
+A multimodal fake news detection system using RoBERTa (text), ViT (image), and Whisper (audio) with a Flask web interface.
+>>>>>>> e22468527851d7ffaa8cb8ab036068640c4503bd
