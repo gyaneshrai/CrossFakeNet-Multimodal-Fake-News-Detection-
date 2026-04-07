@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>CrossFakeNet — Multimodal Fake News Detector</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Syne:wght@400;600;800&display=swap" rel="stylesheet"/>
+<link rel="stylesheet" href="/static/css/style.css"/>
+</head>
+<body>
+<div class="app">
+
+  <div class="header">
+    <div class="header-badge">Research Demo · SRM Institute of Science and Technology</div>
+    <h1>Cross<span>Fake</span>Net</h1>
+    <p>Multimodal fake news detection — select input type to route through the appropriate AI model pipeline</p>
+  </div>
+
+  <!-- Modality Selector -->
+  <div class="modality-label">// select input modality</div>
+  <div class="modality-grid">
+    <button class="mod-btn active" onclick="switchModal('text')" id="btn-text">
+      <span class="mod-icon">📝</span>
+      <span class="mod-name">Text</span>
+    </button>
+    <button class="mod-btn" onclick="switchModal('audio')" id="btn-audio">
+      <span class="mod-icon">🎙️</span>
+      <span class="mod-name">Audio</span>
+    </button>
+    <button class="mod-btn" onclick="switchModal('image')" id="btn-image">
+      <span class="mod-icon">🖼️</span>
+      <span class="mod-name">Image</span>
+    </button>
+    <button class="mod-btn" onclick="switchModal('image-comment')" id="btn-image-comment">
+      <span class="mod-icon">💬</span>
+      <span class="mod-name">Image + Comments</span>
+    </button>
+    <button class="mod-btn" onclick="switchModal('video')" id="btn-video">
+      <span class="mod-icon">🎬</span>
+      <span class="mod-name">Video</span>
+    </button>
+  </div>
+
+  <!-- ─── TEXT PANEL ─── -->
+  <div class="panel visible" id="panel-text">
+    <div class="model-tag">Pipeline: <span>RoBERTa-Large → Sentiment → Credibility Scorer</span></div>
+    <div class="pipeline" id="pipe-text"></div>
+    <div class="input-card">
+      <label>News article / headline / claim</label>
+      <textarea id="text-input" placeholder="Paste the news article text, headline, or any claim you want to verify..."></textarea>
+    </div>
+    <div class="row">
+      <div class="input-card">
+        <label>Source URL (optional)</label>
+        <input type="url" id="text-url" placeholder="https://example.com/article"/>
+      </div>
+      <div class="input-card">
+        <label>Language</label>
+        <select id="text-lang">
+          <option value="en">English</option>
+          <option value="hi">Hindi</option>
+          <option value="auto">Auto-detect</option>
+        </select>
+      </div>
+    </div>
+    <button class="analyze-btn" onclick="runAnalysis('text')">Analyze Text →</button>
+  </div>
+
+  <!-- ─── AUDIO PANEL ─── -->
+  <div class="panel" id="panel-audio">
+    <div class="model-tag">Pipeline: <span>Whisper ASR → Wav2Vec2 prosody → RoBERTa-Large</span></div>
+    <div class="pipeline" id="pipe-audio"></div>
+    <div class="input-card">
+      <label>Upload audio file</label>
+      <div class="upload-zone" onclick="triggerUpload('audio-file')" id="zone-audio">
+        <div class="big">🎙️</div>
+        <div style="font-size:13px;color:#93c5fd;">Click to upload</div>
+        <p>Supports MP3, WAV, M4A, OGG — max 50MB</p>
+      </div>
+      <input type="file" id="audio-file" accept=".mp3,.wav,.m4a,.ogg" style="display:none" onchange="showFile('audio')"/>
+    </div>
+    <div class="input-card">
+      <label>News context / title (optional)</label>
+      <input type="text" id="audio-title" placeholder="Provide title or context for better accuracy"/>
+    </div>
+    <button class="analyze-btn" onclick="runAnalysis('audio')">Analyze Audio →</button>
+  </div>
+
+  <!-- ─── IMAGE PANEL ─── -->
+  <div class="panel" id="panel-image">
+    <div class="model-tag">Pipeline: <span>ViT-L/16 → CLIP alignment → GradCAM manipulation detection</span></div>
+    <div class="pipeline" id="pipe-image"></div>
+    <div class="input-card">
+      <label>Upload image</label>
+      <div class="upload-zone" onclick="triggerUpload('image-file')" id="zone-image">
+        <div class="big">🖼️</div>
+        <div style="font-size:13px;color:#93c5fd;">Click to upload</div>
+        <p>Supports JPG, PNG, WEBP — max 10MB</p>
+      </div>
+      <input type="file" id="image-file" accept=".jpg,.jpeg,.png,.webp" style="display:none" onchange="showFile('image')"/>
+    </div>
+    <div class="input-card">
+      <label>Image caption / accompanying text (optional)</label>
+      <input type="text" id="image-caption" placeholder="Caption or headline that appears with the image"/>
+    </div>
+    <button class="analyze-btn" onclick="runAnalysis('image')">Analyze Image →</button>
+  </div>
+
+  <!-- ─── IMAGE + COMMENTS PANEL ─── -->
+  <div class="panel" id="panel-image-comment">
+    <div class="model-tag">Pipeline: <span>ViT-L/16 + RoBERTa → CMAF Cross-Attention → Social GAT</span></div>
+    <div class="pipeline" id="pipe-image-comment"></div>
+    <div class="input-card">
+      <label>Upload image</label>
+      <div class="upload-zone" onclick="triggerUpload('imgcom-file')" id="zone-imgcom">
+        <div class="big">💬</div>
+        <div style="font-size:13px;color:#93c5fd;">Click to upload</div>
+        <p>Supports JPG, PNG, WEBP — max 10MB</p>
+      </div>
+      <input type="file" id="imgcom-file" accept=".jpg,.jpeg,.png,.webp" style="display:none" onchange="showFile('imgcom')"/>
+    </div>
+    <div class="input-card">
+      <label>Post caption / headline</label>
+      <input type="text" id="imgcom-caption" placeholder="The caption or headline posted with the image"/>
+    </div>
+    <div class="input-card">
+      <label>User comments (one per line)</label>
+      <textarea id="imgcom-comments" placeholder="This looks fake!&#10;Shared 50k times already&#10;Can't believe this is real..."></textarea>
+    </div>
+    <div class="row">
+      <div class="input-card">
+        <label>Share count</label>
+        <input type="text" id="imgcom-shares" placeholder="e.g. 85000"/>
+      </div>
+      <div class="input-card">
+        <label>Platform</label>
+        <select id="imgcom-platform">
+          <option>Twitter / X</option>
+          <option>Facebook</option>
+          <option>WhatsApp</option>
+          <option>Instagram</option>
+          <option>Other</option>
+        </select>
+      </div>
+    </div>
+    <button class="analyze-btn" onclick="runAnalysis('image-comment')">Analyze Image + Comments →</button>
+  </div>
+
+  <!-- ─── VIDEO PANEL ─── -->
+  <div class="panel" id="panel-video">
+    <div class="model-tag">Pipeline: <span>ViT frames + Whisper + Wav2Vec2 → BiLSTM-GCN → CMAF fusion</span></div>
+    <div class="pipeline" id="pipe-video"></div>
+    <div class="input-card">
+      <label>Upload video</label>
+      <div class="upload-zone" onclick="triggerUpload('video-file')" id="zone-video">
+        <div class="big">🎬</div>
+        <div style="font-size:13px;color:#93c5fd;">Click to upload</div>
+        <p>Supports MP4, AVI, MOV — max 100MB</p>
+      </div>
+      <input type="file" id="video-file" accept=".mp4,.avi,.mov" style="display:none" onchange="showFile('video')"/>
+    </div>
+    <div class="row">
+      <div class="input-card">
+        <label>Title / headline</label>
+        <input type="text" id="video-title" placeholder="News headline for this video"/>
+      </div>
+      <div class="input-card">
+        <label>Source domain</label>
+        <input type="text" id="video-source" placeholder="e.g. unknown-channel.com"/>
+      </div>
+    </div>
+    <div class="row">
+      <div class="input-card">
+        <label>View count</label>
+        <input type="text" id="video-views" placeholder="e.g. 2400000"/>
+      </div>
+      <div class="input-card">
+        <label>Share count</label>
+        <input type="text" id="video-shares" placeholder="e.g. 120000"/>
+      </div>
+    </div>
+    <button class="analyze-btn" onclick="runAnalysis('video')">Analyze Video →</button>
+  </div>
+
+  <!-- Progress -->
+  <div class="progress-wrap" id="progress-wrap">
+    <div class="progress-steps" id="progress-steps"></div>
+  </div>
+
+  <!-- Error -->
+  <div class="error-box" id="error-box" style="display:none"></div>
+
+  <!-- Result -->
+  <div class="result-card" id="result-card" style="display:none">
+    <div class="result-header">
+      <div>
+        <div class="result-sub-label">Detection verdict</div>
+        <div class="verdict" id="verdict-text">—</div>
+      </div>
+      <div class="confidence-pill" id="conf-pill">—</div>
+    </div>
+    <div class="result-body">
+      <div class="signal-grid" id="signal-grid"></div>
+      <div id="bars-section"></div>
+      <div id="transcript-section"></div>
+      <div class="explanation-box" id="explanation-box"></div>
+    </div>
+    <div class="result-footer">
+      <div class="footer-dot"></div>
+      <span id="footer-text">CrossFakeNet · multimodal analysis</span>
+    </div>
+  </div>
+
+  <!-- Models reference -->
+  <div class="models-used">
+    <h3>// models in this system</h3>
+    <div class="models-grid">
+      <div class="model-chip"><span class="mci">🔤</span><div><div class="mcn">RoBERTa-Large</div><div class="mcr">Text encoding (text, audio, video)</div></div></div>
+      <div class="model-chip"><span class="mci">👁️</span><div><div class="mcn">ViT-L/16</div><div class="mcr">Visual encoding (image, video)</div></div></div>
+      <div class="model-chip"><span class="mci">🎙️</span><div><div class="mcn">Whisper ASR</div><div class="mcr">Audio transcription (audio, video)</div></div></div>
+      <div class="model-chip"><span class="mci">🔊</span><div><div class="mcn">Wav2Vec2</div><div class="mcr">Prosody features (audio, video)</div></div></div>
+      <div class="model-chip"><span class="mci">🔗</span><div><div class="mcn">CLIP proxy</div><div class="mcr">Image–text alignment (image)</div></div></div>
+      <div class="model-chip"><span class="mci">🕸️</span><div><div class="mcn">Graph ATN (GAT)</div><div class="mcr">Social context (image+comments, video)</div></div></div>
+      <div class="model-chip"><span class="mci">🔀</span><div><div class="mcn">CMAF module</div><div class="mcr">Cross-modal fusion (image+comments, video)</div></div></div>
+      <div class="model-chip"><span class="mci">⏱️</span><div><div class="mcn">BiLSTM-GCN</div><div class="mcr">Temporal + spatial encoding (video)</div></div></div>
+    </div>
+  </div>
+
+</div>
+<script src="/static/js/main.js"></script>
+</body>
+</html>
